@@ -34,6 +34,7 @@ router.get(
       console.log("valid login");
       Products.find({}, (err, products) => {
         res.json({ products: products });
+        console.log("done!");
       });
     });
   }
