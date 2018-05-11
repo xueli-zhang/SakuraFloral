@@ -3,6 +3,13 @@ const router = express.Router();
 const User = require("../../models/User");
 const permitCode = "yoyoiloveu";
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const secretKey = require("../../config/keys").secretKey;
+const passport = require("passport");
+
+//Load Input Validation
+const validateRegisterInput = require("../../validation/register");
+const validateLoginInput = require("../../validation/login");
 
 //@route    Get api/users/test
 //@desc     Test users route
@@ -20,10 +27,16 @@ router.get("/test", (req, res) => {
 
 router.post("/register", (req, res) => {
   var inviteCode = req.body.permitCode;
+  console.log(inviteCode);
   if (inviteCode !== permitCode) {
     return res
       .status(400)
       .json("Watch Dog: Permission Denied! You are not invited!");
+  }
+
+  const { errors, isValid } = validateRegisterInput(req.body);
+  if (!isValid) {
+    return res.status(400).json(errors);
   }
   User.findOne({
     email: req.body.email
@@ -51,41 +64,107 @@ router.post("/register", (req, res) => {
   });
 });
 
-module.exports = router;
-
 //@route    Get api/admin/login
 //@desc     Login admins/ Returning JWT
 //@access   Public
 router.post("/login", (req, res) => {
-  const email = req.body.email;
-  const name = req.body.name;
+  const { errors, isValid } = validateLoginInput(req.body);
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
+  const name = req.body.nameOrEmail;
+  const email = req.body.nameOrEmail;
   const password = req.body.password;
 
-  //Find user by email
   User.findOne({ email }).then(user => {
     if (!user) {
-      return res.status(404).json({
-        email: "Permission Denied!",
-        password: "Permissin Denied!"
+      User.findOne({ name }).then(user => {
+        if (!user) {
+          return res.status(404).json({
+            nameOrEmail: "Permission Denied!",
+            password: "Permissin Denied!"
+          });
+        } else {
+          bcrypt.compare(password, user.password).then(isMatch => {
+            if (isMatch) {
+              //User matched
+
+              const payload = {
+                id: user.id,
+                name: user.name
+              };
+              //sign token
+              jwt.sign(
+                payload,
+                secretKey,
+                {
+                  expiresIn: 7200
+                },
+                (err, token) => {
+                  res.json({
+                    success: true,
+                    token: "Bearer " + token
+                  });
+                }
+              );
+            } else {
+              return res.status(400).json({
+                nameOrEmail: "Permission Denied!",
+                password: "Permissin Denied!"
+              });
+            }
+          });
+        }
       });
-    }
-    User.findOne({ name }).then(user => {
-      if (!user) {
-        return res.status(404).json({
-          email: "Permission Denied!",
-          password: "Permissin Denied!"
-        });
-      }
+    } else {
       bcrypt.compare(password, user.password).then(isMatch => {
         if (isMatch) {
-          res.json({ msg: "Success" });
+          //User matched
+
+          const payload = {
+            id: user.id,
+            name: user.name
+          };
+          //sign token
+          jwt.sign(
+            payload,
+            secretKey,
+            {
+              expiresIn: 7200
+            },
+            (err, token) => {
+              res.json({
+                success: true,
+                token: "Bearer " + token
+              });
+            }
+          );
         } else {
           return res.status(400).json({
-            email: "Permission Denied!",
+            nameOrEmail: "Permission Denied!",
             password: "Permissin Denied!"
           });
         }
       });
-    });
+    }
   });
 });
+
+//@route Get api/admin/current
+//@desc Return current User
+//@access Private
+
+router.get(
+  "/current",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    res.json({
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email,
+      date: req.user.date
+    });
+  }
+);
+
+module.exports = router;
