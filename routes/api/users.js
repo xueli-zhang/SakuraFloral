@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../../models/User");
-const permitCode = "yoyoiloveu";
+const permitCode = "yoyoiloveu"; //use different permitCode when running
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const secretKey = require("../../config/keys").secretKey;
