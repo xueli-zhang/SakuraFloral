@@ -24,7 +24,6 @@ router.get("/test", (req, res) => {
 //@route    Get api/admin/register
 //@desc     register admins
 //@access   Public
-
 router.post("/register", (req, res) => {
   var inviteCode = req.body.permitCode;
   console.log(inviteCode);

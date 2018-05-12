@@ -1,38 +1,28 @@
 const Validator = require("validator");
 const isEmpty = require("./is-empty");
 
-module.exports = function validateRegisterInput(data) {
+module.exports = function validateProductInput(data) {
   let errors = {};
   data.name = !isEmpty(data.name) ? data.name : "";
-  data.email = !isEmpty(data.email) ? data.email : "";
-  data.password = !isEmpty(data.password) ? data.password : "";
-  data.password2 = !isEmpty(data.password2) ? data.password2 : "";
-
-  if (!Validator.isLength(data.name, { min: 2, max: 30 })) {
-    errors.name = "Name must be 2~30 characters long.";
-  }
+  data.flies["coverImage"] = !isEmpty(data.flies["coverImage"])
+    ? data.flies["coverImage"]
+    : "";
+  data.files["productImages"] = !isEmpty(data.files["productImages"])
+    ? data.files["productImages"]
+    : "";
+  data.bio = !isEmpty(data.bio) ? data.bio : "";
 
   if (Validator.isEmpty(data.name)) {
     errors.name = "Name is required!";
   }
-  if (!Validator.isEmail(data.email)) {
-    errors.email = "Email is invalid!";
+  if (Validator.isEmpty(data.coverImage)) {
+    errors.coverImage = "Cover Image is required!";
   }
-  if (Validator.isEmpty(data.email)) {
-    errors.email = "Email is required!";
+  if (Validator.isEmpty(data.productImages)) {
+    errors.productImages = "Product Images are required!";
   }
-  if (!Validator.isLength(data.password, { min: 6, max: 30 })) {
-    errors.password = "Password must be in 6 ~ 30";
-  }
-  if (!Validator.equals(data.password, data.password2)) {
-    errors.password = "Password must match!";
-    errors.password2 = "Password must match!";
-  }
-  if (Validator.isEmpty(data.password)) {
-    errors.password = "Password is required!";
-  }
-  if (Validator.isEmpty(data.password2)) {
-    errors.password2 = "Confirm Password is required!";
+  if (Validator.isEmpty(data.bio)) {
+    errors.bio = "Description is required!";
   }
 
   return {

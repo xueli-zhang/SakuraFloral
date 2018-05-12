@@ -4,6 +4,10 @@ const mongoose = require("mongoose");
 const passport = require("passport");
 const path = require("path");
 const multer = require("multer");
+const fs = require("fs");
+
+//Load validation
+const validateProductInput = require("../../validation/products");
 
 //set Storage engine
 const storage = multer.diskStorage({
@@ -11,7 +15,12 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     cb(
       null,
-      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+      file.fieldname +
+        "-" +
+        Date.now() +
+        "-" +
+        Math.floor(Math.random() * 100) +
+        path.extname(file.originalname)
     );
   }
 });
@@ -42,26 +51,65 @@ const User = require("../../models/User");
 //@route    Get api/profile/test
 //@desc     Test profile route
 //@access   Public
-
 router.get("/test", (req, res) => {
   res.json({
     msg: "Products Works"
   });
 });
 
-//@route  Get api/adim_product
+//@route    Get api/products
+//@desc     Get Products Page
+//@access   Public
+router.get("/", (req, res) => {
+  Products.find({}, (err, products) => {
+    res.json({ products: products });
+  });
+});
+
+//@route    Get api/products/:nameOrId
+//@desc     Get Single Product Page by name Or ID
+//@access   Public
+router.get("/:nameorid", (req, res) => {
+  //console.log(req.params.nameorid);
+  Products.findOne({ name: req.params.nameorid })
+    .then(product => {
+      if (!product) {
+        if (mongoose.Types.ObjectId.isValid(req.params.nameorid)) {
+          //console.log(req.params.nameorid);
+          Products.findOne({ _id: req.params.nameorid }).then(product => {
+            if (!product) {
+              return res.status(404).json({ msg: "No Such Product!" });
+            } else {
+              return res.json(product);
+            }
+          });
+        } else {
+          return res.status(404).json({ msg: "No Such Product!" });
+        }
+      } else {
+        return res.json(product);
+      }
+    })
+    .catch(err => {
+      if (err) {
+        return res.status(400).json({ msg: err });
+      }
+    });
+});
+
+//@route  Get api/products/adim_product
 //@desc   Get Current User's Authorization
 //@acess  private
 router.get(
   "/admin_products",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
-    console.log(req.user.id);
+    //console.log(req.user.id);
     User.findOne({ _id: req.user.id }).then(user => {
       if (!user) {
         return res.status(404).redirect("/invalid");
       }
-      console.log("valid login");
+      //console.log("valid login");
       Products.find({}, (err, products) => {
         res.json({ products: products });
       });
@@ -69,14 +117,14 @@ router.get(
   }
 );
 
-//@route  Get api/adim_product
+//@route  Get api/products/add_product
 //@desc   Get Authorized User Post File page
 //@acess  private
 router.get(
   "/add_products",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
-    console.log(req.user.id);
+    //console.log(req.user.id);
     User.findOne({ _id: req.user.id }).then(user => {
       if (!user) {
         return res.status(404).redirect("/invalid");
@@ -86,14 +134,26 @@ router.get(
   }
 );
 
-//@route  Post api/add_product
+//@route  Post api/products/add_product
 //@desc   Add Products for Authorized User
 //@acess  private
 router.post(
   "/add_products",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
+    //check validation
+    //console.log(req);
+    //const { errors, isValid } = validateProductInput(req.body);
+
+    //if (!isValid) {
+    //  return res.status(400).json(errors);
+    //}
+
     upload(req, res, err => {
+      if (req.body.name === "" || req.body.bio === "") {
+        //console.log("no name and bio");
+        return res.status(400).json({ msg: "Error: Name and Bio is reqired!" });
+      }
       if (req.files === undefined) {
         return res
           .status(400)
@@ -108,48 +168,48 @@ router.post(
           .json({ msg: "Error: No Cover or Production Images Selected!" });
       }
       if (err) {
-        console.log(err);
+        //console.log(err);
         return res.status(400).json({ msg: err });
       }
 
       imagPaths = req.files["productImages"].map(comibineImagPath);
-      console.log(imagPaths);
-      console.log(req.files["coverImage"][0].filename);
+      //console.log(imagPaths);
+      //console.log(req.files["coverImage"][0].filename);
 
       const productInfo = {};
       productInfo.name = req.body.name;
       productInfo.facePath =
         "upload/products/" + req.files["coverImage"][0].filename;
       productInfo.bio = req.body.bio;
-      productInfo.imagPaths = imagPaths;
+      productInfo.imgPaths = imagPaths;
       Products.findOne({ name: req.body.name }).then(product => {
         if (product) {
           //update product
-          console.log(productInfo);
-          console.log(product.id);
+          //console.log(productInfo);
+          //console.log(product.id);
           Products.findOneAndUpdate(
             { _id: product.id },
             { $set: productInfo },
             { new: true }
           )
             .then(product => {
-              console.log("product update ");
-              console.log(product);
+              //console.log("product update ");
+              //console.log(product);
               return res.json(product);
             })
             .catch(err => {
               if (err) {
-                console.log("error");
+                //console.log("error");
                 return res.status(400).json(err);
               }
             });
         } else {
           const newProduct = new Products(productInfo);
-          console.log("product info " + productInfo);
+          //console.log("product info " + productInfo);
           newProduct
             .save()
             .then(product => {
-              console.log(req.files);
+              //console.log(req.files);
               return res.json(product);
             })
             .catch(err => {
@@ -159,6 +219,33 @@ router.post(
             });
         }
       });
+    });
+  }
+);
+
+//@route  Post api/products/remove_product
+//@desc   Remove Products for Authorized User
+//@acess  private
+router.post(
+  "/remove_products",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    Products.findOne({ _id: req.body.id }).then(product => {
+      //console.log(product);
+      imgPaths = product.imgPaths;
+      if (imgPaths !== null) {
+        removeImages("./public/", imgPaths);
+      }
+      if (product.facePath !== null) {
+        fs.unlink("./public/" + product.facePath, err => {
+          if (err) {
+            return res.status(400).json(err);
+          }
+
+          product.remove();
+          return res.json("Successfully Deleted Product!");
+        });
+      }
     });
   }
 );
@@ -179,7 +266,21 @@ function checkFileType(file, cb) {
   cb("Error: Images Only!");
 }
 
+// Combine Image locations
 function comibineImagPath(item, index) {
   return "upload/products/" + item.filename;
 }
+
+//Remove specific image
+function removeImages(filePath, files) {
+  files.forEach(file => {
+    fs.unlink(filePath + file, err => {
+      if (err) {
+        return res.status(400).json(err);
+      }
+      //console.log("file deleted!");
+    });
+  });
+}
+
 module.exports = router;
