@@ -5,6 +5,7 @@ const passport = require("passport");
 const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
+const checkFileType = require("../../validation/checkFileType");
 
 //Load validation
 const validateProductInput = require("../../validation/products");
@@ -43,7 +44,7 @@ const upload = multer({
 ]);
 
 //Load Product Model
-const Products = require("../../models/Products");
+const Products = require("../../models/Product");
 
 //Load User Authorization
 const User = require("../../models/User");
@@ -97,11 +98,11 @@ router.get("/:nameorid", (req, res) => {
     });
 });
 
-//@route  Get api/products/adim_product
+//@route  Get api/products/admin_product/main
 //@desc   Get Current User's Authorization
 //@acess  private
 router.get(
-  "/admin_products",
+  "/admin_products/main",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     //console.log(req.user.id);
@@ -120,11 +121,46 @@ router.get(
   }
 );
 
-//@route  Get api/products/add_product
-//@desc   Get Authorized User Post File page
+//@route  Get api/products/admin/:nameorid
+//@desc   Get Single Product for Authorized Users
 //@acess  private
 router.get(
-  "/add_products",
+  "/admin/:nameorid",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    //console.log(req.user.id);
+    Products.findOne({ name: req.params.nameorid })
+      .then(product => {
+        if (!product) {
+          if (mongoose.Types.ObjectId.isValid(req.params.nameorid)) {
+            //console.log(req.params.nameorid);
+            Products.findOne({ _id: req.params.nameorid }).then(product => {
+              if (!product) {
+                return res.status(404).json({ msg: "No Such Product!" });
+              } else {
+                return res.json(product);
+              }
+            });
+          } else {
+            return res.status(404).json({ msg: "No Such Product!" });
+          }
+        } else {
+          return res.json(product);
+        }
+      })
+      .catch(err => {
+        if (err) {
+          return res.status(400).json({ msg: err });
+        }
+      });
+  }
+);
+
+//@route  Get api/products/add_product
+//@desc   Get Authorized User Post File Form page
+//@acess  private
+router.get(
+  "/admin_products/add_products",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     //console.log(req.user.id);
@@ -138,7 +174,7 @@ router.get(
 );
 
 //@route  Post api/products/add_product
-//@desc   Add Products for Authorized User
+//@desc   Add Or Update Products for Authorized User
 //@acess  private
 router.post(
   "/add_products",
@@ -190,6 +226,18 @@ router.post(
           //update product
           //console.log(productInfo);
           //console.log(product.id);
+
+          imgPaths = product.imgPaths;
+          if (imgPaths !== null) {
+            removeImages("./public/", imgPaths);
+          }
+          if (product.facePath !== null) {
+            fs.unlink("./public/" + product.facePath, err => {
+              if (err) {
+                return res.status(400).json(err);
+              }
+            });
+          }
           Products.findOneAndUpdate(
             { _id: product.id },
             { $set: productInfo },
@@ -235,6 +283,11 @@ router.post(
   (req, res) => {
     Products.findOne({ _id: req.body.id }).then(product => {
       //console.log(product);
+      if (!product) {
+        return res
+          .status(404)
+          .json({ msg: "cannot delete unexsited product!" });
+      }
       imgPaths = product.imgPaths;
       if (imgPaths !== null) {
         removeImages("./public/", imgPaths);
@@ -252,22 +305,6 @@ router.post(
     });
   }
 );
-
-// Check File Type
-function checkFileType(file, cb) {
-  //allows
-  const filetype = /jpeg|jpg|png|gif/;
-
-  //check
-  const extname = filetype.test(path.extname(file.originalname).toLowerCase());
-
-  const mimetype = filetype.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
-  }
-  cb("Error: Images Only!");
-}
 
 // Combine Image locations
 function comibineImagPath(item, index) {

@@ -6,7 +6,15 @@ const UserSchema = new Schema({
     type: String,
     required: true
   },
+  avatarPath: {
+    type: String,
+    required: true
+  },
   email: {
+    type: String,
+    required: true
+  },
+  title: {
     type: String,
     required: true
   },
