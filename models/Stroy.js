@@ -13,25 +13,15 @@ const StorySchema = new Schema({
   demoPaths: {
     type: [String]
   },
-  videoURL: {
+  videoUrl: {
     type: String
   },
   name: {
-    type: String,
-    required: name
+    type: String
   },
   avatar: {
-    type: String,
-    required: true
+    type: String
   },
-  likes: [
-    {
-      user: {
-        type: Schema.Types.ObjectId,
-        ref: "users"
-      }
-    }
-  ],
   date: {
     type: Date,
     default: Date.now()

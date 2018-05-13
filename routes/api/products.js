@@ -6,6 +6,7 @@ const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
 const checkFileType = require("../../validation/checkFileType");
+const removeCode = "removeit";
 
 //Load validation
 const validateProductInput = require("../../validation/products");
@@ -182,16 +183,12 @@ router.post(
   (req, res) => {
     //check validation
     //console.log(req);
-    //const { errors, isValid } = validateProductInput(req.body);
 
-    //if (!isValid) {
-    //  return res.status(400).json(errors);
-    //}
+    upload(req, res, cb => {
+      const { errors, isValid } = validateProductInput(req.body);
 
-    upload(req, res, err => {
-      if (req.body.name === "" || req.body.bio === "") {
-        //console.log("no name and bio");
-        return res.status(400).json({ msg: "Error: Name and Bio is reqired!" });
+      if (!isValid) {
+        return res.status(400).json(errors);
       }
       if (req.files === undefined) {
         return res
@@ -205,10 +202,6 @@ router.post(
         return res
           .status(400)
           .json({ msg: "Error: No Cover or Production Images Selected!" });
-      }
-      if (err) {
-        //console.log(err);
-        return res.status(400).json({ msg: err });
       }
 
       imagPaths = req.files["productImages"].map(comibineImagPath);
@@ -281,6 +274,11 @@ router.post(
   "/remove_products",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
+    if (req.body.removeCode !== removeCode) {
+      return res.status(400).json({
+        msg: "failed to delete!"
+      });
+    }
     Products.findOne({ _id: req.body.id }).then(product => {
       //console.log(product);
       if (!product) {
@@ -298,8 +296,14 @@ router.post(
             return res.status(400).json(err);
           }
 
-          product.remove();
-          return res.json("Successfully Deleted Product!");
+          product
+            .remove()
+            .then(() => {
+              return res.json("Successfully Deleted Product!");
+            })
+            .catch(err => {
+              return res.status(400).json(err);
+            });
         });
       }
     });
