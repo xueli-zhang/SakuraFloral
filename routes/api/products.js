@@ -111,6 +111,9 @@ router.get(
       }
       //console.log("valid login");
       Products.find({}, (err, products) => {
+        if (!products) {
+          return res.json({ msg: "you haven't add any products!" });
+        }
         res.json({ products: products });
       });
     });
