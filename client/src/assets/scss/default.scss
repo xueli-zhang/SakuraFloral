@@ -1,0 +1,143 @@
+@import "_config.scss";
+
+header {
+  z-index: 999;
+  position: fixed;
+  display: block;
+  width: 100%;
+  background-color: $white;
+  height: 90px;
+  padding: 1% 0;
+  .logo {
+    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 30px;
+    @include translateY(-50%);
+  }
+
+  nav,
+  nav ul,
+  nav ul li {
+    margin: 0;
+    padding: 0;
+  }
+  nav {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    @include translateY(-50%);
+
+    ul li {
+      margin-right: 50px;
+      list-style-type: none;
+      display: inline-block;
+    }
+    a {
+      font-size: 23px;
+      line-height: normal;
+      font-family: "Courier New", Courier, monospace;
+    }
+  }
+}
+.main {
+  @include translateY(18%);
+  width: 100%;
+  position: relative;
+  padding: 10% 0;
+  background-image: url("https://www.wpfreeware.com/wp-content/uploads/2014/09/placeholder-images.jpg");
+  background-repeat: no-repeat;
+  -webkit-background-size: 100%;
+  -moz-background-size: 100%;
+  -o-background-size: 100%;
+  background-size: 100%;
+
+  .frame {
+    display: block;
+    margin: 0 auto;
+    width: 35%;
+    height: 50%;
+    padding: 2% 0;
+
+    background-color: $white;
+    .border {
+      width: 90%;
+      height: 90%;
+      margin: auto;
+      border-width: thin;
+      border-style: solid;
+      border-color: $gold;
+
+      .shopname {
+        text-align: center;
+        font-size: 25px;
+        color: $gold;
+        font-family: "Courier New", Courier, monospace;
+      }
+    }
+  }
+}
+
+.collections {
+  width: 100%;
+  .title {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    margin: 10% auto;
+    color: $gold;
+    font-family: "Courier New", Courier, monospace;
+    .slogan {
+      font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+    }
+    .view {
+      float: right;
+      padding-right: 20%;
+    }
+  }
+  .windows,
+  .windows ul,
+  .windows ul li {
+    margin: 0;
+    padding: 0;
+  }
+  .windows {
+    position: relative;
+    width: 80%;
+    margin: 0 auto;
+    ul {
+      text-align: center;
+      list-style: none;
+      li {
+        display: inline;
+        .collection {
+          padding: 2%;
+          width: 25%;
+          height: 100%;
+        }
+      }
+    }
+  }
+}
+footer {
+  width: 100%;
+  padding: 5% 0;
+  text-align: center;
+  .socialList,
+  li {
+    margin: 0;
+    padding: 0;
+  }
+  .socialList {
+    list-style: none;
+    padding-bottom: 2%;
+    li {
+      display: inline;
+      padding: 0 3%;
+    }
+  }
+
+  img {
+    height: 50px;
+  }
+}

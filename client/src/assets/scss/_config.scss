@@ -1,0 +1,61 @@
+$black: #010000;
+$white: #ffffff;
+$gold: #b0a171;
+$darkPink: #ff69b4;
+$lightPink: #ffc3e1;
+$lightGery: #e6e6e6;
+$darkGery: #333;
+$red: #ff1755;
+
+@mixin translateY($e) {
+  -webkit-transform: translateY($e);
+  -moz-transform: translateY($e);
+  transform: translateY($e);
+}
+
+@mixin transition($e) {
+  -webkit-transition: $e;
+  -moz-transition: $e;
+  transition: $e;
+}
+
+body {
+  font-family: "Open Sans", sans-serif;
+  font-size: 18px;
+  color: $black;
+  font-weight: 400;
+  font-style: normal;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  text-decoration: none;
+  color: $gold;
+  cursor: pointer;
+  @include transition(color 0.5s ease-in-out);
+
+  &:hover {
+    color: $darkGery;
+  }
+}
+
+.divider {
+  width: 80%;
+  overflow: visible; /* For IE */
+  padding: 0;
+  border: none;
+  border-top: medium double $gold;
+  color: $gold;
+  text-align: center;
+  border-radius: 10px;
+}
+.divider::before {
+  content: "§";
+  display: inline-block;
+  position: relative;
+  top: -0.7em;
+  font-size: 1.5em;
+  padding: 0 0.25em;
+  background: white;
+}
