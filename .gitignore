@@ -6,3 +6,4 @@ public
 /client/node_modules
 /client/package.json
 /client/package-lock.json
+/client/src/staticImages
