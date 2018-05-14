@@ -7,6 +7,13 @@ const multer = require("multer");
 const fs = require("fs");
 const checkFileType = require("../../validation/checkFileType");
 const removeCode = "removeit";
+const twilSid = require("../../config/twilioAcc").accountSid;
+const twilToken = require("../../config/twilioAcc").authToken;
+const shopNum = require("../../config/twilioAcc").shopPhone;
+const twilNum = require("../../config/twilioAcc").twilNum;
+
+//set up twilio msg client
+const client = require("twilio")(twilSid, twilToken);
 
 //Load validation
 const validateProductInput = require("../../validation/products");
@@ -47,8 +54,11 @@ const upload = multer({
 //Load Product Model
 const Products = require("../../models/Product");
 
-//Load User Authorization
+//Load User Authorization Model
 const User = require("../../models/User");
+
+//Load Order Model
+const Orders = require("../../models/Order");
 
 //@route    Get api/profile/test
 //@desc     Test profile route
@@ -99,6 +109,116 @@ router.get("/:nameorid", (req, res) => {
     });
 });
 
+//@route    Post api/products/:nameOrId
+//@desc     Get Single Product Order by name Or ID
+//@access   Public
+router.post("/order/:nameorid", (req, res) => {
+  if (req.body.phoneNum === undefined) {
+    return res.status(400).res.json({ msg: "phone number is required!" });
+  }
+  if (req.body.orderNum === undefined) {
+    req.body.orderNum = "not sure";
+  }
+  Products.findOne({ name: req.params.nameorid })
+    .then(product => {
+      if (!product) {
+        if (mongoose.Types.ObjectId.isValid(req.params.nameorid)) {
+          //console.log(req.params.nameorid);
+          Products.findOne({ _id: req.params.nameorid }).then(product => {
+            if (!product) {
+              return res.status(404).json({ msg: "No Such Product!" });
+            } else {
+              const orderInfo = {};
+              const updateInfo = {};
+              orderInfo.clientNum = req.body.phoneNum;
+              orderInfo.productName = product.name;
+              orderInfo.orderNum = req.body.orderNum;
+
+              updateInfo.rank = product.rank + 1;
+              Products.findOneAndUpdate(
+                { _id: product.id },
+                { $set: updateInfo },
+                { new: true }
+              ).then(product => {
+                console.log(product.rank);
+              });
+              const msg =
+                "Order: " +
+                product.name +
+                " Amount: " +
+                req.body.orderNum +
+                " Client Phone Number: " +
+                req.body.phoneNum;
+              console.log(msg);
+              client.messages
+                .create({
+                  to: shopNum,
+                  from: twilNum,
+                  body: msg
+                })
+                .then(message => {
+                  const newOrder = new Orders(orderInfo);
+                  newOrder.save().then(order => {
+                    return res.json({ msg: "Successfully Ordered!" });
+                  });
+                })
+                .catch(err => {
+                  if (err) {
+                    return res.status(400).json(err);
+                  }
+                });
+            }
+          });
+        } else {
+          return res.status(404).json({ msg: "No Such Product!" });
+        }
+      } else {
+        const orderInfo = {};
+        const updateInfo = {};
+        orderInfo.clientNum = req.body.phoneNum;
+        orderInfo.productName = product.name;
+        orderInfo.orderNum = req.body.orderNum;
+        updateInfo.rank = product.rank + 1;
+        Products.findOneAndUpdate(
+          { _id: product.id },
+          { $set: updateInfo },
+          { new: true }
+        ).then(product => {
+          console.log(product.rank);
+        });
+        const msg =
+          "Order: " +
+          product.name +
+          " Amount: " +
+          req.body.orderNum +
+          " Client Phone Number: " +
+          req.body.phoneNum;
+        console.log(msg);
+        client.messages
+          .create({
+            to: shopNum,
+            from: twilNum,
+            body: msg
+          })
+          .then(message => {
+            const newOrder = new Orders(orderInfo);
+            newOrder.save().then(order => {
+              return res.json({ msg: "Successfully Ordered!" });
+            });
+          })
+          .catch(err => {
+            if (err) {
+              return res.status(400).json(err);
+            }
+          });
+      }
+    })
+    .catch(err => {
+      if (err) {
+        return res.status(400).json({ msg: err });
+      }
+    });
+});
 //@route  Get api/products/admin_product/main
 //@desc   Get Current User's Authorization
 //@acess  private
